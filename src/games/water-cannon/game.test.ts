@@ -3,6 +3,7 @@ import {
   CANNON,
   TANK_SIZE,
   createState,
+  crossesTarget,
   fire,
   isHit,
   scoreForHit,
@@ -70,6 +71,25 @@ describe('water cannon', () => {
   it('detects a hit inside the target and a miss outside it', () => {
     expect(isHit({ x: 410, y: 210, vx: 0, vy: 0 }, target)).toBe(true);
     expect(isHit({ x: 460, y: 200, vx: 0, vy: 0 }, target)).toBe(false);
+  });
+
+  it('scores a shot that crosses a target between updates', () => {
+    const state = createState();
+    state.targets = [{ ...target }];
+    // Starts below the target and ends above it after one update, outside it both times.
+    state.shots = [{ x: target.x, y: target.y + 60, vx: 0, vy: -1200 }];
+    step(state, 0.1);
+    expect(state.score).toBe(scoreForHit(target));
+    expect(state.shots).toHaveLength(0);
+  });
+
+  it('detects a path through a target and a path that passes beside it', () => {
+    const from = { x: target.x - 60, y: target.y };
+    expect(crossesTarget(from, { x: target.x + 60, y: target.y, vx: 0, vy: 0 }, target)).toBe(true);
+    const beside = { x: target.x - 60, y: target.y + 40 };
+    expect(
+      crossesTarget(beside, { x: target.x + 60, y: target.y + 40, vx: 0, vy: 0 }, target),
+    ).toBe(false);
   });
 
   it('scores a fast target higher than a slow one', () => {
